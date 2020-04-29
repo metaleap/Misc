@@ -1,4 +1,5 @@
-#include "../../atmo/at0/utils_and_libc_deps.c"
+#include "../metaleap.c"
+#include <unistd.h>
 #include <termios.h>
 
 typedef struct termios Termios;
@@ -23,8 +24,8 @@ void enableRawMode() {
     term_attrs.c_oflag &= ~OPOST;
     term_attrs.c_cflag |= CS8;
     term_attrs.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
-    // term_attrs.c_cc[VMIN] = 0;
-    // term_attrs.c_cc[VTIME] = 10;
+    term_attrs.c_cc[VMIN] = 0;
+    term_attrs.c_cc[VTIME] = 1;
 
     if (-1 == tcsetattr(0, TCSAFLUSH, &term_attrs))
         ·fail(str("failed to tcsetattr"));
@@ -34,7 +35,8 @@ void enableRawMode() {
 int main() {
     enableRawMode();
     while (true) {
-        int const chr = fgetc(stdin);
+        int chr = 0;
+        read(0, &chr, 1);
         if (chr == 17)
             exit(0);
         if (chr > 0)
