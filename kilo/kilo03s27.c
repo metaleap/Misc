@@ -1,7 +1,8 @@
 #include "../metaleap.c"
-#include <errno.h>
-#include <unistd.h>
 #include <termios.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/ioctl.h>
 
 typedef struct termios Termios;
 struct {
@@ -25,6 +26,15 @@ void fail(CStr const msg) {
     termClearAndPosTopLeft();
     perror(msg); // errno description
     abort();     // exit code 1
+}
+
+int termDimensions(int* rows, int* cols) {
+    struct winsize win_size = {.ws_row = 0, .ws_col = 0};
+    if (-1 == ioctl(1, TIOCGWINSZ, &win_size) || win_size.ws_row == 0 || win_size.ws_col == 0)
+        return -1;
+    *rows = win_size.ws_row;
+    *cols = win_size.ws_col;
+    return 0;
 }
 
 void termDisableRawMode() {
