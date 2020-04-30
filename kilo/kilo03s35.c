@@ -89,8 +89,12 @@ void edProcessInput() {
 // output
 
 void edDrawRows() {
-    for (int y = 0; y < Ed.screen.rows; y += 1)
-        write(1, "~\r\n", 3);
+    U8 buf[3] = "\r\nL";
+    write(1, "~", 1);
+    for (int y = 0; y < Ed.screen.rows - 1; y += 1) {
+        buf[2] = y + 65;
+        write(1, buf, 3);
+    }
 }
 
 void edRefreshScreen() {
