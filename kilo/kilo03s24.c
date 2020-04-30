@@ -17,6 +17,8 @@ void fail(CStr const msg) {
 
 void disableRawMode() {
     tcsetattr(0, TCSAFLUSH, &orig_term_attrs); // restore terminal attrs
+    write(1, "\x1b[2J", 4);                    // clear screen
+    write(1, "\x1b[H", 3);                     // position cursor at top-left corner
 }
 
 void enableRawMode() {
