@@ -100,6 +100,7 @@ void printStr(Str const str) {
 void writeStr(Str const str) {
     fwrite(&str.at[0], 1, str.len, stdout);
 }
+
 void abortWithBacktraceAndMsg(Str const msg) {
     PtrAny callstack[16];
     UInt const n_frames = backtrace(callstack, 16);
