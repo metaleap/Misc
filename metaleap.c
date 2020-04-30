@@ -150,6 +150,13 @@ Bool strEql(Str const one, Str const two) {
     return true;
 }
 
+Bool strIn(Str const needle, Strs const haystack) {
+    for (UInt i = 0; i < haystack.len; i += 1)
+        if (strEql(needle, haystack.at[i]))
+            return true;
+    return false;
+}
+
 Str strPrefSuff(Str const str, Str const prefix) {
     Str ret_str = ·len0(U8);
     if (str.len >= prefix.len)
