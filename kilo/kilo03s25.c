@@ -72,8 +72,15 @@ void edProcessInput() {
 
 // output
 
+void edDrawRows() {
+    for (int y = 0; y < 24; y += 1)
+        write(1, "~\r\n", 3);
+}
+
 void edRefreshScreen() {
     termClearAndPosTopLeft();
+    edDrawRows();
+    termPosTopLeft();
 }
 
 // init
