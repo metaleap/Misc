@@ -60,11 +60,19 @@ void edProcessKeypress() {
     }
 }
 
+// output
+
+void edRefreshScreen() {
+    write(1, "\x1b[2J", 4);
+}
+
 // init
 
 int main() {
     enableRawMode();
-    while (true)
+    while (true) {
+        edRefreshScreen();
         edProcessKeypress();
+    }
     return 0;
 }
