@@ -17,6 +17,13 @@
         UInt len;                                                                                                                            \
     }
 
+#define ·ListOf(T)                                                                                                                           \
+    struct {                                                                                                                                 \
+        T* at;                                                                                                                               \
+        UInt len;                                                                                                                            \
+        UInt cap;                                                                                                                            \
+    }
+
 #define ·Maybe(T)                                                                                                                            \
     struct {                                                                                                                                 \
         T it;                                                                                                                                \
@@ -50,14 +57,25 @@ typedef ·SliceOf(Str) Strs;
 
 #define ·len0(T) ((T##s) {.len = 0, .at = NULL})
 
+#define ·len1(T, ptr_to_the_value_at_0__) ((T##s) {.len = 1, .at = ptr_to_the_value_at_0__})
+
 #define ·slice(TSlice__, ¹the_slice_to_reslice__, ²idx_start_reslice_from__, ¹idx_end_to_reslice_until__)                                    \
     ((TSlice__##s) {.len = (¹idx_end_to_reslice_until__) - (²idx_start_reslice_from__),                                                      \
                     .at = &((¹the_slice_to_reslice__).at[²idx_start_reslice_from__])})
 
-#define ·append(³the_slice_to_append_to__, ¹the_item_to_append__)                                                                            \
+#define ·last(²the_slice__) (&(²the_slice__.at[²the_slice__.len - 1]))
+
+#define ·push(³the_slice_to_append_to__, ¹the_item_to_append__)                                                                              \
     do {                                                                                                                                     \
         (³the_slice_to_append_to__).at[(³the_slice_to_append_to__).len] = (¹the_item_to_append__);                                           \
         (³the_slice_to_append_to__).len += 1;                                                                                                \
+    } while (0)
+
+#define ·append(⁵the_list_to_append_to__, ¹the_item_to_append__)                                                                             \
+    do {                                                                                                                                     \
+        ·assert((⁵the_list_to_append_to__).len < (⁵the_list_to_append_to__).cap);                                                            \
+        (⁵the_list_to_append_to__).at[(⁵the_list_to_append_to__).len] = (¹the_item_to_append__);                                             \
+        (⁵the_list_to_append_to__).len += 1;                                                                                                 \
     } while (0)
 
 #define ·forEach(TItem, iteree_ident__, ²the_slice_to_iter__, ¹do_block__)                                                                   \
