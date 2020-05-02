@@ -157,6 +157,8 @@ Str str(CStr const c_str) {
 }
 
 Bool strEql(Str const one, Str const two) {
+    if (one.at == NULL || two.at == NULL)
+        return (one.at == two.at);
     if (one.len != two.len)
         return false;
     if (one.len > 0 && one.at != two.at) {
