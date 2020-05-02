@@ -168,6 +168,10 @@ Bool strEql(Str const one, Str const two) {
     return true;
 }
 
+Bool strEq(CStr const one, Str const two, UInt const str_len) {
+    return strEql(strL(one, str_len), two);
+}
+
 Bool strIn(Str const needle, Strs const haystack) {
     for (UInt i = 0; i < haystack.len; i += 1)
         if (strEql(needle, haystack.at[i]))
