@@ -159,7 +159,7 @@ Str str(CStr const c_str) {
 Bool strEql(Str const one, Str const two) {
     if (one.len != two.len)
         return false;
-    if (one.len > 0) {
+    if (one.len > 0 && one.at != two.at) {
         UInt i_middle = 1 + (one.len / 2);
         for (UInt i = 0, j = one.len - 1; i < i_middle; i += 1, j -= 1)
             if (one.at[i] != two.at[i] || one.at[j] != two.at[j])
