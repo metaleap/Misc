@@ -11,15 +11,31 @@
 
 // macro names prefixed with '·' instead of all upper-case (avoids SCREAM_CODE)
 
+#pragma clang diagnostic ignored "-Wlanguage-extension-token"
+#define ·DbgBrk() asm volatile("int3"); // gdb myprog -ex run
+
 #define ·SliceOf(T)                                                                                                                          \
     struct {                                                                                                                                 \
         T* at;                                                                                                                               \
         UInt len;                                                                                                                            \
     }
 
+#define ·SliceOfPtrs(T)                                                                                                                      \
+    struct {                                                                                                                                 \
+        T** at;                                                                                                                              \
+        UInt len;                                                                                                                            \
+    }
+
 #define ·ListOf(T)                                                                                                                           \
     struct {                                                                                                                                 \
         T* at;                                                                                                                               \
+        UInt len;                                                                                                                            \
+        UInt cap;                                                                                                                            \
+    }
+
+#define ·ListOfPtrs(T)                                                                                                                       \
+    struct {                                                                                                                                 \
+        T** at;                                                                                                                              \
         UInt len;                                                                                                                            \
         UInt cap;                                                                                                                            \
     }
@@ -89,6 +105,8 @@ typedef ·SliceOf(Str) Strs;
 #define ·ok(T, ¹the_value__) ((º##T) {.ok = true, .it = (¹the_value__)})
 
 #define ·none(T) ((º##T) {.ok = false})
+
+#define ·as(T, ¹the_expr__) ((T*)(¹the_expr__))
 
 #define ·fail(¹the_msg)                                                                                                                      \
     do {                                                                                                                                     \
