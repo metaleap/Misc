@@ -108,6 +108,13 @@ typedef ·SliceOf(Str) Strs;
 
 #define ·as(T, ¹the_expr__) ((T*)(¹the_expr__))
 
+#define ·swap(T, the_ptr_lhs, the_ptr_rhs)                                                                                                   \
+    do {                                                                                                                                     \
+        T* tmp_rhs = the_ptr_rhs;                                                                                                            \
+        the_ptr_rhs = the_ptr_lhs;                                                                                                           \
+        the_ptr_lhs = tmp_rhs;                                                                                                               \
+    } while (0)
+
 #define ·fail(¹the_msg)                                                                                                                      \
     do {                                                                                                                                     \
         fprintf(stderr, "\n——————————————————————————————————————————\npanicked at: %s:%d\n", __FILE__, __LINE__);                           \
