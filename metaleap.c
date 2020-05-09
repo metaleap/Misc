@@ -94,10 +94,10 @@ typedef ·SliceOf(Str) Strs;
         (⁵the_list_to_append_to__).len += 1;                                                                                                 \
     } while (0)
 
-#define ·forEach(TItem, iteree_ident__, ²the_slice_to_iter__, ¹do_block__)                                                                   \
+#define ·forEach(TItem, the_ident__, ²the_slice_to_iter__, ¹do_block__)                                                                      \
     do {                                                                                                                                     \
-        for (UInt iˇ##iteree_ident__ = 0; iˇ##iteree_ident__ < (²the_slice_to_iter__).len; iˇ##iteree_ident__ += 1) {                        \
-            TItem* const iteree_ident__ = &((²the_slice_to_iter__).at[iˇ##iteree_ident__]);                                                  \
+        for (UInt iˇ##the_ident__ = 0; iˇ##the_ident__ < (²the_slice_to_iter__).len; iˇ##the_ident__ += 1) {                                 \
+            TItem* const the_ident__ = &((²the_slice_to_iter__).at[iˇ##the_ident__]);                                                        \
             { ¹do_block__ }                                                                                                                  \
         }                                                                                                                                    \
     } while (0)
