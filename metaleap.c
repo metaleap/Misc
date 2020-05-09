@@ -181,6 +181,13 @@ Str str(CStr const c_str) {
     return ·ok(U64, ret_uInt);
 }
 
+UInt uIntMinSize(UInt const max_incl, UInt const bits) {
+    UInt r = 1;
+    for (UInt m = max_incl >> bits; m > 0; m >>= bits)
+        r += 1;
+    return r;
+}
+
 Bool strEql(Str const one, Str const two) {
     if (one.at == NULL || two.at == NULL)
         return (one.at == two.at);
