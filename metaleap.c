@@ -63,6 +63,7 @@ typedef const char* CStr;
 typedef ·Maybe(Bool) ºBool;
 typedef ·Maybe(UInt) ºUInt;
 typedef ·Maybe(U64) ºU64;
+typedef ·Maybe(I64) ºI64;
 typedef ·SliceOf(Bool) Bools;
 typedef ·SliceOf(UInt) UInts;
 typedef ·SliceOf(U8) U8s;
