@@ -232,6 +232,13 @@ Bool cStrHasChar(CStr const s, U8 const c) {
     return false;
 }
 
+Bool strSuff(Str const haystack, Str const suffix) {
+    if (haystack.len >= suffix.len && suffix.len > 0)
+        return (suffix.len == 1) ? (haystack.at[haystack.len - 1] == suffix.at[0])
+                                 : strEql(suffix, strSub(haystack, haystack.len - suffix.len, haystack.len));
+    return false;
+}
+
 ºUInt strIndexOf(Str const haystack, Str const needle) {
     if (haystack.len != 0 && needle.len != 0 && haystack.len >= needle.len)
         for (UInt i = 0; i < 1 + (haystack.len - needle.len); i += 1) {
