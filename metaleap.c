@@ -43,6 +43,15 @@
 #define ·Maybe(T)                                                                                                                            \
     struct {                                                                                                                                 \
         T it;                                                                                                                                \
+        Bool got;                                                                                                                            \
+    }
+
+#define ·Try(TOk, TErr)                                                                                                                      \
+    struct {                                                                                                                                 \
+        union {                                                                                                                              \
+            TOk ok;                                                                                                                          \
+            TErr err;                                                                                                                        \
+        } it;                                                                                                                                \
         Bool ok;                                                                                                                             \
     }
 
@@ -103,9 +112,9 @@ typedef ·SliceOf(Str) Strs;
         }                                                                                                                                    \
     } while (0)
 
-#define ·got(T, ¹the_value__) ((º##T) {.ok = true, .it = (¹the_value__)})
+#define ·got(T, ¹the_value__) ((º##T) {.got = true, .it = (¹the_value__)})
 
-#define ·none(T) ((º##T) {.ok = false})
+#define ·none(T) ((º##T) {.got = false})
 
 #define ·as(T, ¹the_expr__) ((T*)(¹the_expr__))
 
