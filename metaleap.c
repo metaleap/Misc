@@ -103,7 +103,7 @@ typedef ·SliceOf(Str) Strs;
         }                                                                                                                                    \
     } while (0)
 
-#define ·ok(T, ¹the_value__) ((º##T) {.ok = true, .it = (¹the_value__)})
+#define ·got(T, ¹the_value__) ((º##T) {.ok = true, .it = (¹the_value__)})
 
 #define ·none(T) ((º##T) {.ok = false})
 
@@ -179,7 +179,7 @@ Str str(CStr const c_str) {
         ret_uInt += mult * (str.at[i] - 48);
         mult *= 10;
     }
-    return ·ok(U64, ret_uInt);
+    return ·got(U64, ret_uInt);
 }
 
 UInt uIntMinSize(UInt const max_incl, UInt const bits) {
@@ -245,7 +245,7 @@ Bool strSuff(Str const haystack, Str const suffix) {
         for (UInt i = 0; i < 1 + (haystack.len - needle.len); i += 1) {
             Str const h_sub = ·slice(U8, haystack, i, i + needle.len);
             if (strEql(needle, h_sub))
-                return ·ok(UInt, i);
+                return ·got(UInt, i);
         }
     return ·none(UInt);
 }
