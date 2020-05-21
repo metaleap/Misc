@@ -233,6 +233,12 @@ Bool cStrHasChar(CStr const s, U8 const c) {
     return false;
 }
 
+Bool strPref(Str const haystack, Str const prefix) {
+    if (haystack.len >= prefix.len && prefix.len > 0)
+        return (prefix.len == 1) ? (haystack.at[0] == prefix.at[0]) : strEql(prefix, strSub(haystack, 0, prefix.len));
+    return false;
+}
+
 Bool strSuff(Str const haystack, Str const suffix) {
     if (haystack.len >= suffix.len && suffix.len > 0)
         return (suffix.len == 1) ? (haystack.at[haystack.len - 1] == suffix.at[0])
