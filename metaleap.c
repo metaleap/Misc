@@ -46,15 +46,6 @@
         Bool got;                                                                                                                            \
     }
 
-#define ·Try(TOk, TErr)                                                                                                                      \
-    struct {                                                                                                                                 \
-        union {                                                                                                                              \
-            TOk ok;                                                                                                                          \
-            TErr err;                                                                                                                        \
-        } it;                                                                                                                                \
-        Bool ok;                                                                                                                             \
-    }
-
 typedef bool Bool;
 typedef u_int8_t U8;
 typedef u_int16_t U16;
