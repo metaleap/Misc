@@ -59,6 +59,8 @@ typedef ssize_t Int;
 typedef size_t UInt;
 typedef void* PtrAny;
 typedef const char* CStr;
+typedef struct ZeroSized {
+} ZeroSized;
 
 typedef ·Maybe(Bool) ºBool;
 typedef ·Maybe(UInt) ºUInt;
