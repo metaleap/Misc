@@ -4,15 +4,13 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#if CHAR_BIT != 8
-#error unsupported 'CHAR_BIT', need 8
-#endif
 
 
 // macro names prefixed with '·' instead of all upper-case (avoids SCREAM_CODE)
 
-#pragma clang diagnostic ignored "-Wlanguage-extension-token"
-#define ·DbgBrk() asm volatile("int3"); // gdb myprog -ex run
+
+// #pragma clang diagnostic ignored "-Wlanguage-extension-token"
+// #define ·dbgBrk() asm volatile("int3"); // gdb myprog -ex run
 
 #define ·SliceOf(T)                                                                                                                          \
     struct {                                                                                                                                 \
