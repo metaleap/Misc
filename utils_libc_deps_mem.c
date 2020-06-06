@@ -7,8 +7,10 @@
 #include <stdlib.h>
 
 
+#ifndef mem_max
 #define mem_max (1 * 1024 * 1024)
-struct Mem {
+#endif
+struct {
     U8 buf[mem_max];
     UInt pos;
 } mem = {.pos = 0};
