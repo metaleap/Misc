@@ -91,6 +91,13 @@ Str uIntToStr(UInt const uInt_value, UInt const str_min_len, UInt const base) {
     return ret_str;
 }
 
+UInt strAppendTo(U8 buf[], CStr const str) {
+    UInt i = 0;
+    for (; str[i] != 0; i += 1)
+        buf[i] = str[i];
+    return i;
+}
+
 Str strCopyTo(Str buf, Str const str) {
     for (UInt i = 0; i < str.len; i += 1) {
         buf.at[buf.len] = str.at[i];
@@ -99,8 +106,9 @@ Str strCopyTo(Str buf, Str const str) {
     return buf;
 }
 
-// unused in principle, but kept around for the occasional temporary printf.
 CStr strZ(Str const str) {
+    if (str.at[str.len] == 0)
+        return (CStr)str.at;
     U8* buf = memAlloc(1 + str.len);
     buf[str.len] = 0;
     for (UInt i = 0; i < str.len; i += 1)
@@ -173,9 +181,11 @@ Str strQuot(Str const str) {
 
 Str strConcat(Strs const strs, U8 const sep) {
     UInt str_len = 0;
-    ·forEach(Str, str, strs, { str_len += (sep == 0 ? 0 : 1) + str->len; });
+    UInt const sep_len = ((sep == 0) ? 0 : 1);
+    ·forEach(Str, str, strs, { str_len += (sep_len + str->len); });
 
-    Str ret_str = newStr(0, str_len);
+    Str ret_str = newStr(0, 1 + str_len);
+    ret_str.at[str_len] = 0;
     ·forEach(Str, str, strs, {
         if (iˇstr != 0 && sep != 0) {
             ret_str.at[ret_str.len] = sep;
