@@ -21,8 +21,6 @@ typedef ·SliceOf(JsonValue) JsonValues;
 struct JsonValue {
     JsonValueKind kind;
     union {
-        struct {
-        } null;
         Bool boolean;
         I64 number;
         Str string;
@@ -97,7 +95,7 @@ JsonValue jsonParseArray(Tokens const toks, Str const full_src) {
     ºUInt const tok_end_idx = toksIndexOfMatchingBracket(toks);
     if (tok_end_idx.got && tok_end_idx.it == toks.len - 1) {
         Tokenss const subs = toksSplit(·slice(Token, toks, 1, tok_end_idx.it), tok_kind_sep_comma);
-        ret_json = jsonNewArr(1 + subs.len);
+        ret_json = jsonNewArr(subs.len);
         ·forEach(Tokens, sub_toks, subs, {
             ·push(ret_json.of.arr, jsonParse(*sub_toks, full_src));
             if (·last(ret_json.of.arr)->kind == json_invalid) {
@@ -116,7 +114,7 @@ JsonValue jsonParseObject(Tokens const toks, Str const full_src) {
     ºUInt const tok_end_idx = toksIndexOfMatchingBracket(toks);
     if (tok_end_idx.got && tok_end_idx.it == toks.len - 1) {
         Tokenss const subs = toksSplit(·slice(Token, toks, 1, tok_end_idx.it), tok_kind_sep_comma);
-        ret_json = jsonNewObj(1 + subs.len);
+        ret_json = jsonNewObj(subs.len);
         ·forEach(Tokens, sub_toks, subs, {
             Tokens const cur = *sub_toks;
             if ((cur.len >= 3) && (cur.at[1].kind == tok_kind_ident) && strEq(":", tokSrc(&cur.at[1], full_src), 1)) {
@@ -132,6 +130,9 @@ JsonValue jsonParseObject(Tokens const toks, Str const full_src) {
                         break;
                     }
                 }
+            } else {
+                ret_json.kind = json_invalid;
+                break;
             }
         });
     }
@@ -141,7 +142,13 @@ JsonValue jsonParseObject(Tokens const toks, Str const full_src) {
 JsonValue jsonParse(Tokens const toks, Str const full_src) {
     JsonValue ret_json = {.kind = json_invalid};
 
-    if (toks.len == 1) {
+    if (toks.len > 1)
+        switch (toks.at[0].kind) {
+            case tok_kind_sep_bsquare_open: ret_json = jsonParseArray(toks, full_src); break;
+            case tok_kind_sep_bcurly_open: ret_json = jsonParseObject(toks, full_src); break;
+            default: break;
+        }
+    else if (toks.len == 1) {
         Str const tok_src = tokSrc(&toks.at[0], full_src);
         switch (toks.at[0].kind) {
             case tok_kind_ident: {
@@ -167,12 +174,6 @@ JsonValue jsonParse(Tokens const toks, Str const full_src) {
                 if (ret_json.of.string.at != NULL)
                     ret_json.kind = json_string;
             } break;
-            default: break;
-        }
-    } else if (toks.len > 1) {
-        switch (toks.at[0].kind) {
-            case tok_kind_sep_bsquare_open: ret_json = jsonParseArray(toks, full_src); break;
-            case tok_kind_sep_bcurly_open: ret_json = jsonParseObject(toks, full_src); break;
             default: break;
         }
     }
