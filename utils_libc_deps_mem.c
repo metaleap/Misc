@@ -91,21 +91,6 @@ Str uIntToStr(UInt const uInt_value, UInt const str_min_len, UInt const base) {
     return ret_str;
 }
 
-UInt strAppendTo(U8 buf[], CStr const str) {
-    UInt i = 0;
-    for (; str[i] != 0; i += 1)
-        buf[i] = str[i];
-    return i;
-}
-
-Str strCopyTo(Str buf, Str const str) {
-    for (UInt i = 0; i < str.len; i += 1) {
-        buf.at[buf.len] = str.at[i];
-        buf.len += 1;
-    }
-    return buf;
-}
-
 CStr strZ(Str const str) {
     if (str.at[str.len] == 0)
         return (CStr)str.at;

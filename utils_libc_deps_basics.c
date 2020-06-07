@@ -253,3 +253,10 @@ Bool strSuff(Str const haystack, Str const suffix) {
         }
     return ·none(UInt);
 }
+
+Str strCopyTo(Str buf, Str const str) {
+    for (UInt i = 0; i < str.len; i += 1)
+        buf.at[i + buf.len] = str.at[i];
+    buf.len += str.len;
+    return buf;
+}
