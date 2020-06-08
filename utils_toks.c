@@ -1,5 +1,5 @@
 #pragma once
-#include "utils_libc_deps_mem.c"
+#include "utils_std_mem.c"
 
 
 const CStr tok_op_chars = "!#$&*+-;:./<=>?@\\^~|\x25";

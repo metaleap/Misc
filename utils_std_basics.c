@@ -260,3 +260,11 @@ Str strCopyTo(Str buf, Str const str) {
     buf.len += str.len;
     return buf;
 }
+
+UInt uIntMin(UInt const uint1, UInt const uint2) {
+    return (uint1 > uint2) ? uint2 : uint1;
+}
+
+UInt uIntMax(UInt const uint1, UInt const uint2) {
+    return (uint1 < uint2) ? uint2 : uint1;
+}
