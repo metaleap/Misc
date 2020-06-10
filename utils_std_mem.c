@@ -63,22 +63,23 @@ Str newStr(UInt const initial_len, UInt const max_capacity, Bool const zeroed) {
     return ret_str;
 }
 
-Str uIntToStr(UInt const uInt_value, UInt const str_min_len, UInt const base) {
-    UInt num_digits = 1;
-    UInt n = uInt_value;
-    while (n >= base) {
-        num_digits += 1;
-        n /= base;
+Str uintToBuf(PtrAny str_buf, UInt const uint_value, UInt const str_min_len, UInt const base, UInt num_digits) {
+    if (num_digits == 0) {
+        num_digits = 1;
+        UInt n = uint_value;
+        while (n >= base) {
+            num_digits += 1;
+            n /= base;
+        }
     }
-    n = uInt_value;
-
     UInt const str_len = (num_digits > str_min_len) ? num_digits : str_min_len;
-    Str const ret_str = newStr(str_len, str_len + 1, false);
+    Str const ret_str = (Str) {.at = str_buf, .len = str_len};
     ret_str.at[str_len] = 0;
     for (UInt i = 0; i < str_len - num_digits; i += 1)
         ret_str.at[i] = '0';
 
     Bool done = false;
+    UInt n = uint_value;
     for (UInt i = ret_str.len; i > 0 && !done;) {
         i -= 1;
         if (n < base) {
@@ -92,6 +93,18 @@ Str uIntToStr(UInt const uInt_value, UInt const str_min_len, UInt const base) {
             ret_str.at[i] += 7;
     }
     return ret_str;
+}
+
+Str uIntToStr(UInt const uint_value, UInt const str_min_len, UInt const base) {
+    UInt num_digits = 1;
+    UInt n = uint_value;
+    while (n >= base) {
+        num_digits += 1;
+        n /= base;
+    }
+
+    UInt const str_len = (num_digits > str_min_len) ? num_digits : str_min_len;
+    return uintToBuf(newStr(str_len, str_len + 1, false).at, uint_value, str_min_len, base, num_digits);
 }
 
 CStr strZ(Str const str) {
