@@ -56,7 +56,7 @@ typedef int64_t I64;
 typedef ssize_t Int;
 typedef size_t UInt;
 typedef void* PtrAny;
-typedef const char* CStr;
+typedef char* CStr;
 
 typedef ·Maybe(Bool) ºBool;
 typedef ·Maybe(UInt) ºUInt;
@@ -247,7 +247,7 @@ Bool strSuff(Str const haystack, Str const suffix) {
 }
 
 ºUInt strIndexOf(Str const haystack, Str const needle) {
-    if (haystack.len != 0 && needle.len != 0 && haystack.len >= needle.len)
+    if (haystack.at != NULL && haystack.len != 0 && needle.len != 0 && haystack.len >= needle.len)
         for (UInt i = 0; i < 1 + (haystack.len - needle.len); i += 1) {
             Str const h_sub = ·slice(U8, haystack, i, i + needle.len);
             if (strEql(needle, h_sub))
