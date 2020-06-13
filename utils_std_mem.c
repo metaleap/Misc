@@ -1,10 +1,10 @@
 #pragma once
-#include "utils_std_basics.c"
 #include <execinfo.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "utils_std_basics.c"
 
 
 #ifndef mem_bss_max
@@ -14,6 +14,76 @@ struct {
     U8 buf[mem_bss_max];
     UInt pos;
 } mem_bss = {.pos = 0};
+
+
+typedef enum MemHeapKind {
+    mem_heap_fixed_size,
+    mem_heap_pages_malloc,
+} MemHeapKind;
+
+typedef struct MemHeap {
+    PtrAny ptr;
+    UInt cap;
+    UInt len;
+    MemHeapKind kind;
+} MemHeap;
+
+void memFree(MemHeap* mem_heap) {
+    if (mem_heap == NULL) {
+        MemHeap bss = (MemHeap) {.ptr = &mem_bss, .cap = mem_bss_max, .len = mem_bss.pos, .kind = mem_heap_fixed_size};
+        mem_heap = &bss;
+    }
+    switch (mem_heap->kind) {
+        case mem_heap_fixed_size: {
+            mem_heap->len = 0;
+        } break;
+        case mem_heap_pages_malloc: {
+            PtrAny ptr = mem_heap->ptr;
+            while (ptr != NULL) {
+                PtrAny ptr_next = *((PtrAny*)ptr);
+                free(ptr);
+                ptr = ptr_next;
+            }
+        } break;
+        default: exit(mem_heap->kind);
+    }
+}
+
+PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
+    if (size == 0)
+        return NULL;
+    MemHeap bss;
+    if (mem_heap == NULL) {
+        bss = (MemHeap) {.ptr = &mem_bss, .cap = mem_bss_max, .len = mem_bss.pos, .kind = mem_heap_fixed_size};
+        mem_heap = &bss;
+    }
+    UInt idx = mem_heap->len;
+    UInt new_len = mem_heap->len + size;
+    if (new_len >= mem_heap->cap)
+        switch (mem_heap->kind) {
+            case mem_heap_fixed_size: {
+                ·fail(str("fixed-size allocator out of memory"));
+            } break;
+            case mem_heap_pages_malloc: {
+                if ((sizeof(PtrAny) + size) >= mem_heap->cap)
+                    ·fail(str(""));
+                PtrAny next_page = malloc(mem_heap->cap);
+                if (next_page == NULL)
+                    ·fail(str("heap allocator out of memory"));
+                *((PtrAny*)next_page) = mem_heap->ptr;
+                mem_heap->ptr = next_page;
+                mem_heap->len = sizeof(PtrAny);
+                idx = mem_heap->len;
+                new_len = mem_heap->len + size;
+            } break;
+            default: exit(mem_heap->kind);
+        }
+    mem_heap->len = new_len;
+    if (mem_heap == &bss)
+        mem_bss.pos = mem_heap->len;
+    return ((U8*)mem_heap->ptr) + idx;
+}
+
 
 
 // macro names prefixed with '·' instead of all upper-case (avoids SCREAM_CODE)
@@ -45,14 +115,7 @@ struct {
 
 
 U8* memBssAlloc(UInt const num_bytes) {
-    if (num_bytes == 0)
-        return NULL;
-    UInt const new_pos = mem_bss.pos + num_bytes;
-    if (new_pos >= mem_bss_max - 1)
-        ·fail(str("out of memory: increase mem_bss_max!"));
-    U8* const mem_ptr = &mem_bss.buf[mem_bss.pos];
-    mem_bss.pos = new_pos;
-    return mem_ptr;
+    return memAlloc(NULL, num_bytes);
 }
 
 Str newStr(UInt const initial_len, UInt const max_capacity, Bool const zeroed) {
