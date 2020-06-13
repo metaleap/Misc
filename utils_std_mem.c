@@ -28,6 +28,23 @@ typedef struct MemHeap {
     MemHeapKind kind;
 } MemHeap;
 
+UInt memSize(MemHeap* mem_heap) {
+    switch (mem_heap->kind) {
+        case mem_heap_fixed_size: return mem_heap->cap;
+        case mem_heap_pages_malloc: {
+            UInt ret_size = 0;
+            PtrAny ptr = mem_heap->ptr;
+            while (ptr != NULL) {
+                PtrAny ptr_next = *((PtrAny*)ptr);
+                ret_size += mem_heap->cap;
+                ptr = ptr_next;
+            }
+            return ret_size;
+        }
+        default: exit(mem_heap->kind);
+    }
+}
+
 void memFree(MemHeap* mem_heap) {
     if (mem_heap == NULL) {
         MemHeap bss = (MemHeap) {.ptr = &mem_bss, .cap = mem_bss_max, .len = mem_bss.pos, .kind = mem_heap_fixed_size};
@@ -53,7 +70,8 @@ PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
     if (size == 0)
         return NULL;
     MemHeap bss;
-    if (mem_heap == NULL) {
+    Bool is_bss = (mem_heap == NULL);
+    if (is_bss) {
         bss = (MemHeap) {.ptr = &mem_bss, .cap = mem_bss_max, .len = mem_bss.pos, .kind = mem_heap_fixed_size};
         mem_heap = &bss;
     }
@@ -62,14 +80,14 @@ PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
     if (new_len >= mem_heap->cap)
         switch (mem_heap->kind) {
             case mem_heap_fixed_size: {
-                ·fail(str("fixed-size allocator out of memory"));
+                ·fail(str((!is_bss) ? "memAlloc: fixed-size allocator out of memory" : "TODO: increase mem_bss_max"));
             } break;
             case mem_heap_pages_malloc: {
                 if ((sizeof(PtrAny) + size) >= mem_heap->cap)
-                    ·fail(str(""));
+                    ·fail(str("memAlloc: insufficient .cap for mem_heap_pages_malloc"));
                 PtrAny next_page = malloc(mem_heap->cap);
                 if (next_page == NULL)
-                    ·fail(str("heap allocator out of memory"));
+                    ·fail(str("memAlloc: heap allocator out of memory"));
                 *((PtrAny*)next_page) = mem_heap->ptr;
                 mem_heap->ptr = next_page;
                 mem_heap->len = sizeof(PtrAny);
@@ -79,7 +97,7 @@ PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
             default: exit(mem_heap->kind);
         }
     mem_heap->len = new_len;
-    if (mem_heap == &bss)
+    if (is_bss)
         mem_bss.pos = mem_heap->len;
     return ((U8*)mem_heap->ptr) + idx;
 }
