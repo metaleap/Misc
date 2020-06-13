@@ -117,21 +117,22 @@ U8* memBssAlloc(UInt const num_bytes) {
         .len = (³initial_len__),                                                                                                             \
         .at = (T*)(memAlloc((¹mem_heap__), (((²max_capacity__) < (³initial_len__)) ? (³initial_len__) : (²max_capacity__)) * (sizeof(T))))})
 
-#define ·sliceOfPtrs(T, ³initial_len__, ²max_capacity__)                                                                                     \
+#define ·sliceOfPtrs(T, ¹mem_heap__, ³initial_len__, ²max_capacity__)                                                                        \
     {                                                                                                                                        \
         .len = (³initial_len__),                                                                                                             \
-        .at = (T**)(memBssAlloc((((²max_capacity__) < (³initial_len__)) ? (³initial_len__) : (²max_capacity__)) * (sizeof(T*))))             \
+        .at = (T**)(memAlloc((¹mem_heap__), (((²max_capacity__) < (³initial_len__)) ? (³initial_len__) : (²max_capacity__)) * (sizeof(T*)))) \
     }
 
-#define ·listOf(T, ⁵initial_len__, ⁴max_capacity__)                                                                                          \
-    ((T##s) {.len = (⁵initial_len__),                                                                                                        \
-             .cap = (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)),                                         \
-             .at = (T*)(memBssAlloc((((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)) * (sizeof(T))))})
+#define ·listOf(T, ¹mem_heap__, ⁵initial_len__, ⁴max_capacity__)                                                                             \
+    ((T##s) {                                                                                                                                \
+        .len = (⁵initial_len__),                                                                                                             \
+        .cap = (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)),                                              \
+        .at = (T*)(memAlloc((¹mem_heap__), (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)) * (sizeof(T))))})
 
-#define ·listOfPtrs(T, ⁵initial_len__, ⁴max_capacity__)                                                                                      \
+#define ·listOfPtrs(T, ¹mem_heap__, ⁵initial_len__, ⁴max_capacity__)                                                                         \
     {                                                                                                                                        \
         .len = (⁵initial_len__), .cap = (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)),                     \
-        .at = (T**)(memBssAlloc((((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)) * (sizeof(T*))))             \
+        .at = (T**)(memAlloc((¹mem_heap__), (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)) * (sizeof(T*)))) \
     }
 
 
