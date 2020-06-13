@@ -37,12 +37,12 @@ JsonValue jsonNewStr(Str const string) {
 }
 
 JsonValue jsonNewArr(UInt const capacity) {
-    return (JsonValue) {.kind = json_array, .of = {.arr = ·sliceOf(JsonValue, 0, capacity)}};
+    return (JsonValue) {.kind = json_array, .of = {.arr = ·sliceOf(JsonValue, NULL, 0, capacity)}};
 }
 
 JsonValue jsonNewObj(UInt const num_fields) {
     return (JsonValue) {.kind = json_object,
-                        .of = {.obj = {.keys = ·sliceOf(Str, 0, num_fields), .vals = ·sliceOf(JsonValue, 0, num_fields)}}};
+                        .of = {.obj = {.keys = ·sliceOf(Str, NULL, 0, num_fields), .vals = ·sliceOf(JsonValue, NULL, 0, num_fields)}}};
 }
 
 JsonValue jsonNewNum(I64 const number) {

@@ -110,11 +110,12 @@ U8* memBssAlloc(UInt const num_bytes) {
 
 // macro names prefixed with '·' instead of all upper-case (avoids SCREAM_CODE)
 
-#define ·new(T) ((T*)memBssAlloc(sizeof(T)))
+#define ·new(T, ¹mem_heap__) ((T*)memAlloc((¹mem_heap__), sizeof(T)))
 
-#define ·sliceOf(T, ³initial_len__, ²max_capacity__)                                                                                         \
-    ((T##s) {.len = (³initial_len__),                                                                                                        \
-             .at = (T*)(memBssAlloc((((²max_capacity__) < (³initial_len__)) ? (³initial_len__) : (²max_capacity__)) * (sizeof(T))))})
+#define ·sliceOf(T, ¹mem_heap__, ³initial_len__, ²max_capacity__)                                                                            \
+    ((T##s) {                                                                                                                                \
+        .len = (³initial_len__),                                                                                                             \
+        .at = (T*)(memAlloc((¹mem_heap__), (((²max_capacity__) < (³initial_len__)) ? (³initial_len__) : (²max_capacity__)) * (sizeof(T))))})
 
 #define ·sliceOfPtrs(T, ³initial_len__, ²max_capacity__)                                                                                     \
     {                                                                                                                                        \
@@ -136,11 +137,8 @@ U8* memBssAlloc(UInt const num_bytes) {
 
 
 
-Str newStr(UInt const initial_len, UInt const max_capacity, Bool const zeroed) {
+Str newStr(UInt const initial_len, UInt const max_capacity) {
     Str ret_str = (Str) {.len = initial_len, .at = memBssAlloc(max_capacity)};
-    if (zeroed)
-        for (UInt i = 0; i < max_capacity; i += 1)
-            ret_str.at[i] = 0;
     return ret_str;
 }
 
@@ -185,7 +183,7 @@ Str uIntToStr(UInt const uint_value, UInt const str_min_len, UInt const base) {
     }
 
     UInt const str_len = (num_digits > str_min_len) ? num_digits : str_min_len;
-    return uintToBuf(newStr(str_len, str_len + 1, false).at, uint_value, str_min_len, base, num_digits);
+    return uintToBuf(newStr(str_len, str_len + 1).at, uint_value, str_min_len, base, num_digits);
 }
 
 CStr strZ(Str const str) {
@@ -201,7 +199,7 @@ CStr strZ(Str const str) {
 Str strParse(Str const tok) {
     Str ret_str = ·len0(U8);
     if (tok.len >= 2 && tok.at[0] == '\"' && tok.at[tok.len - 1] == '\"') {
-        ret_str = newStr(0, tok.len - 1, false);
+        ret_str = newStr(0, tok.len - 1);
 
         for (UInt i = 1; i < tok.len - 1; i += 1) {
             U8 byte = tok.at[i];
@@ -227,7 +225,7 @@ Str strParse(Str const tok) {
 }
 
 Str strQuot(Str const str) {
-    Str ret_str = newStr(1, 3 + (6 * str.len), false);
+    Str ret_str = newStr(1, 3 + (6 * str.len));
     ret_str.at[0] = '\"';
     for (UInt i = 0; i < str.len; i += 1) {
         U8 const chr = str.at[i];
@@ -266,7 +264,7 @@ Str strConcat(Strs const strs, U8 const sep) {
     UInt const sep_len = ((sep == 0) ? 0 : 1);
     ·forEach(Str, str, strs, { str_len += (sep_len + str->len); });
 
-    Str ret_str = newStr(0, 1 + str_len, false);
+    Str ret_str = newStr(0, 1 + str_len);
     ret_str.at[str_len] = 0;
     ·forEach(Str, str, strs, {
         if (iˇstr != 0 && sep != 0) {
@@ -315,7 +313,7 @@ void printChr(U8 const chr) {
 }
 
 Str ident(Str const str) {
-    Str ret_ident = newStr(0, 4 * str.len, false);
+    Str ret_ident = newStr(0, 4 * str.len);
     Bool all_chars_ok = true;
     for (UInt i = 0; i < str.len; i += 1) {
         U8 c = str.at[i];

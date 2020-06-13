@@ -177,7 +177,7 @@ Bool toksHavePos(Tokens const toks, UInt const pos_line, UInt const pos_col) {
 
 Tokenss toksIndentBasedChunks(Tokens const toks) {
     if (toks.len == 0)
-        return ·sliceOf(Tokens, 0, 0);
+        return ·sliceOf(Tokens, NULL, 0, 0);
     UInt cmp_pos_col = tokPosCol(&toks.at[0]);
     Int level = 0;
     ·forEach(Token, tok, toks, {
@@ -206,7 +206,7 @@ Tokenss toksIndentBasedChunks(Tokens const toks) {
     });
     ·assert(level == 0);
 
-    Tokenss ret_chunks = ·sliceOf(Tokens, 0, num_chunks);
+    Tokenss ret_chunks = ·sliceOf(Tokens, NULL, 0, num_chunks);
     {
         Int start_from = -1;
         ·forEach(Token, tok, toks, {
@@ -302,7 +302,7 @@ Tokenss toksSplit(Tokens const toks, TokenKind const tok_kind) {
     if (toks.len == 0)
         return ·len0(Tokens);
     UInt capacity = 1 + toksCountUnnested(toks, tok_kind);
-    Tokenss ret_sub_toks = ·sliceOf(Tokens, 0, capacity);
+    Tokenss ret_sub_toks = ·sliceOf(Tokens, NULL, 0, capacity);
     {
         Int level = 0;
         UInt start_from = 0;
@@ -324,7 +324,7 @@ Tokens tokenize(Str const full_src, Bool const keep_comment_toks, Str const file
     SrcFileIssues issues;
     if (gather_issues != NULL)
         issues = *gather_issues;
-    Tokens toks = ·sliceOf(Token, 0, full_src.len);
+    Tokens toks = ·sliceOf(Token, NULL, 0, full_src.len);
 
     TokenKind state = tok_kind_nope;
     UInt cur_line_nr = 0;
