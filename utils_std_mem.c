@@ -28,7 +28,7 @@ typedef struct MemHeap {
     MemHeapKind kind;
 } MemHeap;
 
-UInt memSize(MemHeap* mem_heap) {
+UInt memHeapSize(MemHeap* mem_heap) {
     if (mem_heap == NULL)
         return mem_bss_max;
     switch (mem_heap->kind) {
@@ -47,7 +47,7 @@ UInt memSize(MemHeap* mem_heap) {
     }
 }
 
-void memFree(MemHeap* mem_heap) {
+void memHeapFree(MemHeap* mem_heap) {
     if (mem_heap == NULL)
         mem_bss.pos = 0;
     else
@@ -67,7 +67,7 @@ void memFree(MemHeap* mem_heap) {
         }
 }
 
-PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
+PtrAny memHeapAlloc(MemHeap* mem_heap, UInt const size) {
     if (size == 0)
         return NULL;
     MemHeap bss;
@@ -102,40 +102,51 @@ PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
     return ((U8*)mem_heap->ptr) + idx;
 }
 
+PtrAny memHeapCopy(MemHeap* mem_heap, PtrAny ptr, UInt size) {
+    PtrAny ret_ptr = memHeapAlloc(mem_heap, size);
+    for (UInt i = 0; i < size; i += 1)
+        ((U8*)ret_ptr)[i] = ((U8*)ptr)[i];
+    return ret_ptr;
+}
+
 
 
 // macro names prefixed with '·' instead of all upper-case (avoids SCREAM_CODE)
 
-#define ·new(T, ¹mem_heap__) ((T*)memAlloc((¹mem_heap__), sizeof(T)))
+#define ·new(T, ¹mem_heap__) ((T*)memHeapAlloc((¹mem_heap__), sizeof(T)))
+
+#define ·keep(T, ¹mem_heap__, ¹the_value__) ((T*)memHeapCopy(¹mem_heap__, ¹the_value__, sizeof(T)))
 
 #define ·sliceOf(T, ¹mem_heap__, ³initial_len__, ²max_capacity__)                                                                            \
-    ((T##s) {                                                                                                                                \
-        .len = (³initial_len__),                                                                                                             \
-        .at = (T*)(memAlloc((¹mem_heap__), (((²max_capacity__) < (³initial_len__)) ? (³initial_len__) : (²max_capacity__)) * (sizeof(T))))})
+    ((T##s) {.len = (³initial_len__),                                                                                                        \
+             .at = (T*)(memHeapAlloc((¹mem_heap__),                                                                                          \
+                                     (((²max_capacity__) < (³initial_len__)) ? (³initial_len__) : (²max_capacity__)) * (sizeof(T))))})
 
 #define ·sliceOfPtrs(T, ¹mem_heap__, ³initial_len__, ²max_capacity__)                                                                        \
     {                                                                                                                                        \
         .len = (³initial_len__),                                                                                                             \
-        .at = (T**)(memAlloc((¹mem_heap__), (((²max_capacity__) < (³initial_len__)) ? (³initial_len__) : (²max_capacity__)) * (sizeof(T*)))) \
+        .at = (T**)(memHeapAlloc((¹mem_heap__),                                                                                              \
+                                 (((²max_capacity__) < (³initial_len__)) ? (³initial_len__) : (²max_capacity__)) * (sizeof(T*))))            \
     }
 
 #define ·listOf(T, ¹mem_heap__, ⁵initial_len__, ⁴max_capacity__)                                                                             \
-    ((T##s) {                                                                                                                                \
-        .len = (⁵initial_len__),                                                                                                             \
-        .cap = (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)),                                              \
-        .at = (T*)(memAlloc((¹mem_heap__), (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)) * (sizeof(T))))})
+    ((T##s) {.len = (⁵initial_len__),                                                                                                        \
+             .cap = (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)),                                         \
+             .at = (T*)(memHeapAlloc((¹mem_heap__),                                                                                          \
+                                     (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)) * (sizeof(T))))})
 
 #define ·listOfPtrs(T, ¹mem_heap__, ⁵initial_len__, ⁴max_capacity__)                                                                         \
     {                                                                                                                                        \
         .len = (⁵initial_len__), .cap = (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)),                     \
-        .at = (T**)(memAlloc((¹mem_heap__), (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)) * (sizeof(T*)))) \
+        .at = (T**)(memHeapAlloc((¹mem_heap__),                                                                                              \
+                                 (((⁴max_capacity__) < (⁵initial_len__)) ? (⁵initial_len__) : (⁴max_capacity__)) * (sizeof(T*))))            \
     }
 
 
 
 
 Str newStr(MemHeap* mem_heap, UInt const initial_len, UInt const max_capacity) {
-    Str ret_str = (Str) {.len = initial_len, .at = memAlloc(mem_heap, 1 + max_capacity)};
+    Str ret_str = (Str) {.len = initial_len, .at = memHeapAlloc(mem_heap, 1 + max_capacity)};
     ret_str.at[max_capacity] = 0;
     ret_str.at[initial_len] = 0;
     return ret_str;
@@ -188,7 +199,7 @@ Str uIntToStr(MemHeap* mem_heap, UInt const uint_value, UInt const str_min_len, 
 CStr strZ(Str const str) {
     if (str.at[str.len] == 0)
         return (CStr)str.at;
-    U8* buf = memAlloc(NULL, 1 + str.len);
+    U8* buf = memHeapAlloc(NULL, 1 + str.len);
     buf[str.len] = 0;
     for (UInt i = 0; i < str.len; i += 1)
         buf[i] = str.at[i];

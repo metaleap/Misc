@@ -156,6 +156,8 @@ void abortWithBacktraceAndMsg(Str const msg) {
 }
 
 Str strL(CStr const c_str, UInt str_len) {
+    if (c_str == NULL)
+        return ·len0(U8);
     if (str_len == 0)
         for (UInt i = 0; c_str[i] != 0; i += 1)
             str_len += 1;
