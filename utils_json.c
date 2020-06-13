@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils_std_basics.c"
+#include "utils_std_mem.c"
 #include "utils_toks.c"
 
 
@@ -36,13 +37,14 @@ JsonValue jsonNewStr(Str const string) {
     return (JsonValue) {.kind = json_string, .of = {.string = string}};
 }
 
-JsonValue jsonNewArr(UInt const capacity) {
-    return (JsonValue) {.kind = json_array, .of = {.arr = ·sliceOf(JsonValue, NULL, 0, capacity)}};
+JsonValue jsonNewArr(MemHeap* mem_heap, UInt const capacity) {
+    return (JsonValue) {.kind = json_array, .of = {.arr = ·sliceOf(JsonValue, mem_heap, 0, capacity)}};
 }
 
-JsonValue jsonNewObj(UInt const num_fields) {
-    return (JsonValue) {.kind = json_object,
-                        .of = {.obj = {.keys = ·sliceOf(Str, NULL, 0, num_fields), .vals = ·sliceOf(JsonValue, NULL, 0, num_fields)}}};
+JsonValue jsonNewObj(MemHeap* mem_heap, UInt const num_fields) {
+    return (JsonValue) {
+        .kind = json_object,
+        .of = {.obj = {.keys = ·sliceOf(Str, mem_heap, 0, num_fields), .vals = ·sliceOf(JsonValue, mem_heap, 0, num_fields)}}};
 }
 
 JsonValue jsonNewNum(I64 const number) {
@@ -87,17 +89,17 @@ Str jsonObjValStr(JsonValue const* const json_obj, Str const key) {
 
 
 
-JsonValue jsonParse(Tokens toks, Str const full_src);
+JsonValue jsonParse(MemHeap* mem_heap, Tokens toks, Str const full_src);
 
-JsonValue jsonParseArray(Tokens const toks, Str const full_src) {
+JsonValue jsonParseArray(MemHeap* mem_heap, Tokens const toks, Str const full_src) {
     JsonValue ret_json = {.kind = json_invalid};
 
     ºUInt const tok_end_idx = toksIndexOfMatchingBracket(toks);
     if (tok_end_idx.got && tok_end_idx.it == toks.len - 1) {
-        Tokenss const subs = toksSplit(·slice(Token, toks, 1, tok_end_idx.it), tok_kind_sep_comma);
-        ret_json = jsonNewArr(subs.len);
+        Tokenss const subs = toksSplit(mem_heap, ·slice(Token, toks, 1, tok_end_idx.it), tok_kind_sep_comma);
+        ret_json = jsonNewArr(mem_heap, subs.len);
         ·forEach(Tokens, sub_toks, subs, {
-            ·push(ret_json.of.arr, jsonParse(*sub_toks, full_src));
+            ·push(ret_json.of.arr, jsonParse(mem_heap, *sub_toks, full_src));
             if (·last(ret_json.of.arr)->kind == json_invalid) {
                 ret_json.kind = json_invalid;
                 break;
@@ -108,23 +110,23 @@ JsonValue jsonParseArray(Tokens const toks, Str const full_src) {
     return ret_json;
 }
 
-JsonValue jsonParseObject(Tokens const toks, Str const full_src) {
+JsonValue jsonParseObject(MemHeap* mem_heap, Tokens const toks, Str const full_src) {
     JsonValue ret_json = {.kind = json_invalid};
 
     ºUInt const tok_end_idx = toksIndexOfMatchingBracket(toks);
     if (tok_end_idx.got && tok_end_idx.it == toks.len - 1) {
-        Tokenss const subs = toksSplit(·slice(Token, toks, 1, tok_end_idx.it), tok_kind_sep_comma);
-        ret_json = jsonNewObj(subs.len);
+        Tokenss const subs = toksSplit(mem_heap, ·slice(Token, toks, 1, tok_end_idx.it), tok_kind_sep_comma);
+        ret_json = jsonNewObj(mem_heap, subs.len);
         ·forEach(Tokens, sub_toks, subs, {
             Tokens const cur = *sub_toks;
             if ((cur.len >= 3) && (cur.at[1].kind == tok_kind_ident) && strEq(":", tokSrc(&cur.at[1], full_src), 1)) {
-                Str const key = strParse(tokSrc(&cur.at[0], full_src));
+                Str const key = strParse(mem_heap, tokSrc(&cur.at[0], full_src));
                 if (key.at == NULL) {
                     ret_json.kind = json_invalid;
                     break;
                 } else {
                     ·push(ret_json.of.obj.keys, key);
-                    ·push(ret_json.of.obj.vals, jsonParse(·slice(Token, cur, 2, cur.len), full_src));
+                    ·push(ret_json.of.obj.vals, jsonParse(mem_heap, ·slice(Token, cur, 2, cur.len), full_src));
                     if (·last(ret_json.of.obj.vals)->kind == json_invalid) {
                         ret_json.kind = json_invalid;
                         break;
@@ -139,13 +141,13 @@ JsonValue jsonParseObject(Tokens const toks, Str const full_src) {
     return ret_json;
 }
 
-JsonValue jsonParse(Tokens const toks, Str const full_src) {
+JsonValue jsonParse(MemHeap* mem_heap, Tokens const toks, Str const full_src) {
     JsonValue ret_json = {.kind = json_invalid};
 
     if (toks.len > 1)
         switch (toks.at[0].kind) {
-            case tok_kind_sep_bsquare_open: ret_json = jsonParseArray(toks, full_src); break;
-            case tok_kind_sep_bcurly_open: ret_json = jsonParseObject(toks, full_src); break;
+            case tok_kind_sep_bsquare_open: ret_json = jsonParseArray(mem_heap, toks, full_src); break;
+            case tok_kind_sep_bcurly_open: ret_json = jsonParseObject(mem_heap, toks, full_src); break;
             default: break;
         }
     else if (toks.len == 1) {
@@ -170,7 +172,7 @@ JsonValue jsonParse(Tokens const toks, Str const full_src) {
                 }
             } break;
             case tok_kind_lit_str_qdouble: {
-                ret_json.of.string = strParse(tok_src);
+                ret_json.of.string = strParse(mem_heap, tok_src);
                 if (ret_json.of.string.at != NULL)
                     ret_json.kind = json_string;
             } break;
@@ -198,14 +200,10 @@ Str jsonWrite(Str buf, UInt const buf_cap, JsonValue const* const json) {
                         ·push(buf, "false"[i]);
             } break;
             case json_number: {
-                Str const num_str = uIntToStr(json->of.number, 1, 10);
-                for (UInt i = 0; i < num_str.len && (buf.len < buf_cap); i += 1)
-                    ·push(buf, num_str.at[i]);
+                buf = uintToBuf(buf.at, json->of.number, 1, 10, 0);
             } break;
             case json_string: {
-                Str const str_quot = strQuot(json->of.string);
-                for (UInt i = 0; i < str_quot.len && (buf.len < buf_cap); i += 1)
-                    ·push(buf, str_quot.at[i]);
+                buf = strQuotTo(buf, buf_cap - buf.len, json->of.string);
             } break;
             case json_array: {
                 if (buf.len < buf_cap)
@@ -225,9 +223,7 @@ Str jsonWrite(Str buf, UInt const buf_cap, JsonValue const* const json) {
                 for (UInt i = 0; i < json->of.obj.vals.len && (buf.len < buf_cap); i += 1) {
                     if (i != 0)
                         ·push(buf, ',');
-                    Str const str_quot = strQuot(json->of.obj.keys.at[i]);
-                    for (UInt j = 0; j < str_quot.len && (buf.len < buf_cap); j += 1)
-                        ·push(buf, str_quot.at[j]);
+                    buf = strQuotTo(buf, buf_cap - buf.len, json->of.obj.keys.at[i]);
                     if (buf.len < buf_cap)
                         ·push(buf, ':');
                     if (buf.len < buf_cap)
@@ -236,7 +232,7 @@ Str jsonWrite(Str buf, UInt const buf_cap, JsonValue const* const json) {
                 if (buf.len < buf_cap)
                     ·push(buf, '}');
             } break;
-            default: ·fail(uIntToStr(json->kind, 1, 10));
+            default: ·fail(uIntToStr(NULL, json->kind, 1, 10));
         }
 
     if (buf.len >= buf_cap)

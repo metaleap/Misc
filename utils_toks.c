@@ -85,9 +85,9 @@ UInt tokPosCol(Token const* const tok) {
     return tok->char_pos - tok->char_pos_line_start;
 }
 
-Str tokPosStr(Token const* const tok) {
-    Str const line_nr = uIntToStr(1 + tok->line_nr, 1, 10);
-    return str3(tok->file_name, strL(":", 1), line_nr);
+Str tokPosStr(MemHeap* mem_heap, Token const* const tok) {
+    Str const line_nr = uIntToStr(mem_heap, 1 + tok->line_nr, 1, 10);
+    return str3(mem_heap, tok->file_name, strL(":", 1), line_nr);
 }
 
 Str tokSrc(Token const* const tok, Str const full_src) {
@@ -175,9 +175,9 @@ Bool toksHavePos(Tokens const toks, UInt const pos_line, UInt const pos_col) {
     return ·none(SrcFileIssue);
 }
 
-Tokenss toksIndentBasedChunks(Tokens const toks) {
+Tokenss toksIndentBasedChunks(MemHeap* mem_heap, Tokens const toks) {
     if (toks.len == 0)
-        return ·sliceOf(Tokens, NULL, 0, 0);
+        return ·sliceOf(Tokens, mem_heap, 0, 0);
     UInt cmp_pos_col = tokPosCol(&toks.at[0]);
     Int level = 0;
     ·forEach(Token, tok, toks, {
@@ -206,7 +206,7 @@ Tokenss toksIndentBasedChunks(Tokens const toks) {
     });
     ·assert(level == 0);
 
-    Tokenss ret_chunks = ·sliceOf(Tokens, NULL, 0, num_chunks);
+    Tokenss ret_chunks = ·sliceOf(Tokens, mem_heap, 0, num_chunks);
     {
         Int start_from = -1;
         ·forEach(Token, tok, toks, {
@@ -297,12 +297,12 @@ UInt tokThrong(Tokens const toks, UInt const tok_idx, Str const full_src) {
     return ret_idx;
 }
 
-Tokenss toksSplit(Tokens const toks, TokenKind const tok_kind) {
+Tokenss toksSplit(MemHeap* mem_heap, Tokens const toks, TokenKind const tok_kind) {
     ·assert(!tokIsBracket(tok_kind));
     if (toks.len == 0)
         return ·len0(Tokens);
     UInt capacity = 1 + toksCountUnnested(toks, tok_kind);
-    Tokenss ret_sub_toks = ·sliceOf(Tokens, NULL, 0, capacity);
+    Tokenss ret_sub_toks = ·sliceOf(Tokens, mem_heap, 0, capacity);
     {
         Int level = 0;
         UInt start_from = 0;
@@ -320,11 +320,12 @@ Tokenss toksSplit(Tokens const toks, TokenKind const tok_kind) {
     return ret_sub_toks;
 }
 
-Tokens tokenize(Str const full_src, Bool const keep_comment_toks, Str const file_name, SrcFileIssues* const gather_issues) {
+Tokens tokenize(MemHeap* mem_heap, Str const full_src, Bool const keep_comment_toks, Str const file_name,
+                SrcFileIssues* const gather_issues) {
     SrcFileIssues issues;
     if (gather_issues != NULL)
         issues = *gather_issues;
-    Tokens toks = ·sliceOf(Token, NULL, 0, full_src.len);
+    Tokens toks = ·sliceOf(Token, mem_heap, 0, full_src.len);
 
     TokenKind state = tok_kind_nope;
     UInt cur_line_nr = 0;

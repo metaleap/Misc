@@ -102,10 +102,6 @@ PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
     return ((U8*)mem_heap->ptr) + idx;
 }
 
-U8* memBssAlloc(UInt const num_bytes) {
-    return memAlloc(NULL, num_bytes);
-}
-
 
 
 // macro names prefixed with '·' instead of all upper-case (avoids SCREAM_CODE)
@@ -138,8 +134,10 @@ U8* memBssAlloc(UInt const num_bytes) {
 
 
 
-Str newStr(UInt const initial_len, UInt const max_capacity) {
-    Str ret_str = (Str) {.len = initial_len, .at = memBssAlloc(max_capacity)};
+Str newStr(MemHeap* mem_heap, UInt const initial_len, UInt const max_capacity) {
+    Str ret_str = (Str) {.len = initial_len, .at = memAlloc(mem_heap, 1 + max_capacity)};
+    ret_str.at[max_capacity] = 0;
+    ret_str.at[initial_len] = 0;
     return ret_str;
 }
 
@@ -175,7 +173,7 @@ Str uintToBuf(PtrAny str_buf, UInt const uint_value, UInt const str_min_len, UIn
     return ret_str;
 }
 
-Str uIntToStr(UInt const uint_value, UInt const str_min_len, UInt const base) {
+Str uIntToStr(MemHeap* mem_heap, UInt const uint_value, UInt const str_min_len, UInt const base) {
     UInt num_digits = 1;
     UInt n = uint_value;
     while (n >= base) {
@@ -184,23 +182,23 @@ Str uIntToStr(UInt const uint_value, UInt const str_min_len, UInt const base) {
     }
 
     UInt const str_len = (num_digits > str_min_len) ? num_digits : str_min_len;
-    return uintToBuf(newStr(str_len, str_len + 1).at, uint_value, str_min_len, base, num_digits);
+    return uintToBuf(newStr(mem_heap, str_len, str_len + 1).at, uint_value, str_min_len, base, num_digits);
 }
 
 CStr strZ(Str const str) {
     if (str.at[str.len] == 0)
         return (CStr)str.at;
-    U8* buf = memBssAlloc(1 + str.len);
+    U8* buf = memAlloc(NULL, 1 + str.len);
     buf[str.len] = 0;
     for (UInt i = 0; i < str.len; i += 1)
         buf[i] = str.at[i];
     return (CStr)buf;
 }
 
-Str strParse(Str const tok) {
+Str strParse(MemHeap* mem_heap, Str const tok) {
     Str ret_str = ·len0(U8);
     if (tok.len >= 2 && tok.at[0] == '\"' && tok.at[tok.len - 1] == '\"') {
-        ret_str = newStr(0, tok.len - 1);
+        ret_str = newStr(mem_heap, 0, tok.len - 1);
 
         for (UInt i = 1; i < tok.len - 1; i += 1) {
             U8 byte = tok.at[i];
@@ -225,47 +223,55 @@ Str strParse(Str const tok) {
     return ret_str;
 }
 
-Str strQuot(Str const str) {
-    Str ret_str = newStr(1, 3 + (6 * str.len));
-    ret_str.at[0] = '\"';
-    for (UInt i = 0; i < str.len; i += 1) {
+Str strQuotTo(Str buf, UInt buf_cap, Str const str) {
+    buf.at[0] = '\"';
+    buf.len += 1;
+    ·assert(buf.len < buf_cap);
+    for (UInt i = 0; (buf.len < buf_cap) && (i < str.len); i += 1) {
         U8 const chr = str.at[i];
         if (chr >= 32 && chr < 127 && chr != '\\' && chr != '\"')
-            ret_str.at[ret_str.len] = chr;
+            buf.at[buf.len] = chr;
         else {
-            ret_str.at[ret_str.len] = '\\';
-            ret_str.len += 1;
-            switch (chr) {
-                case '\t': ret_str.at[ret_str.len] = 't'; break;
-                case '\b': ret_str.at[ret_str.len] = 'b'; break;
-                case '\f': ret_str.at[ret_str.len] = 'f'; break;
-                case '\n': ret_str.at[ret_str.len] = 'n'; break;
-                case '\r': ret_str.at[ret_str.len] = 'r'; break;
-                case '\"': ret_str.at[ret_str.len] = '\"'; break;
-                case '\\': ret_str.at[ret_str.len] = '\\'; break;
-                default: {
-                    ret_str.at[ret_str.len] = 'u';
-                    const Str esc_num_str = uIntToStr(chr, 4, 16);
-                    for (UInt c = 0; c < esc_num_str.len; c += 1)
-                        ret_str.at[1 + c + ret_str.len] = esc_num_str.at[c];
-                    ret_str.len += esc_num_str.len;
-                } break;
-            }
+            buf.at[buf.len] = '\\';
+            buf.len += 1;
+            if (buf.len < buf_cap)
+                switch (chr) {
+                    case '\t': buf.at[buf.len] = 't'; break;
+                    case '\b': buf.at[buf.len] = 'b'; break;
+                    case '\f': buf.at[buf.len] = 'f'; break;
+                    case '\n': buf.at[buf.len] = 'n'; break;
+                    case '\r': buf.at[buf.len] = 'r'; break;
+                    case '\"': buf.at[buf.len] = '\"'; break;
+                    case '\\': buf.at[buf.len] = '\\'; break;
+                    default: {
+                        buf.at[buf.len] = 'u';
+                        buf.len += 1;
+                        if ((buf.len + 4) < buf_cap)
+                            buf = uintToBuf(buf.at, chr, 4, 16, 0);
+                    } break;
+                }
         }
-        ret_str.len += 1;
+        buf.len += 1;
     }
-    ret_str.at[ret_str.len] = '\"';
-    ret_str.len += 1;
-    ret_str.at[ret_str.len] = 0;
-    return ret_str;
+    ·assert(buf.len < buf_cap);
+    buf.at[buf.len] = '\"';
+    buf.len += 1;
+    ·assert(buf.len < buf_cap);
+    buf.at[buf.len] = 0;
+    return buf;
 }
 
-Str strConcat(Strs const strs, U8 const sep) {
+Str strQuot(MemHeap* mem_heap, Str const str) {
+    UInt const cap = 3 + (6 * str.len);
+    return strQuotTo(newStr(mem_heap, 0, cap), cap, str);
+}
+
+Str strConcat(MemHeap* mem_heap, Strs const strs, U8 const sep) {
     UInt str_len = 0;
     UInt const sep_len = ((sep == 0) ? 0 : 1);
     ·forEach(Str, str, strs, { str_len += (sep_len + str->len); });
 
-    Str ret_str = newStr(0, 1 + str_len);
+    Str ret_str = newStr(mem_heap, 0, 1 + str_len);
     ret_str.at[str_len] = 0;
     ·forEach(Str, str, strs, {
         if (iˇstr != 0 && sep != 0) {
@@ -279,32 +285,32 @@ Str strConcat(Strs const strs, U8 const sep) {
     return ret_str;
 }
 
-Str str2(Str const s1, Str const s2) {
-    return strConcat((Strs) {.len = 2, .at = ((Str[]) {s1, s2})}, 0);
+Str str2(MemHeap* mem_heap, Str const s1, Str const s2) {
+    return strConcat(mem_heap, (Strs) {.len = 2, .at = ((Str[]) {s1, s2})}, 0);
 }
 
-Str str3(Str const s1, Str const s2, Str const s3) {
-    return strConcat((Strs) {.len = 3, .at = ((Str[]) {s1, s2, s3})}, 0);
+Str str3(MemHeap* mem_heap, Str const s1, Str const s2, Str const s3) {
+    return strConcat(mem_heap, (Strs) {.len = 3, .at = ((Str[]) {s1, s2, s3})}, 0);
 }
 
-Str str4(Str const s1, Str const s2, Str const s3, Str const s4) {
-    return strConcat((Strs) {.len = 4, .at = ((Str[]) {s1, s2, s3, s4})}, 0);
+Str str4(MemHeap* mem_heap, Str const s1, Str const s2, Str const s3, Str const s4) {
+    return strConcat(mem_heap, (Strs) {.len = 4, .at = ((Str[]) {s1, s2, s3, s4})}, 0);
 }
 
-Str str5(Str const s1, Str const s2, Str const s3, Str const s4, Str const s5) {
-    return strConcat((Strs) {.len = 5, .at = ((Str[]) {s1, s2, s3, s4, s5})}, 0);
+Str str5(MemHeap* mem_heap, Str const s1, Str const s2, Str const s3, Str const s4, Str const s5) {
+    return strConcat(mem_heap, (Strs) {.len = 5, .at = ((Str[]) {s1, s2, s3, s4, s5})}, 0);
 }
 
-Str str6(Str const s1, Str const s2, Str const s3, Str const s4, Str const s5, Str const s6) {
-    return strConcat((Strs) {.len = 6, .at = ((Str[]) {s1, s2, s3, s4, s5, s6})}, 0);
+Str str6(MemHeap* mem_heap, Str const s1, Str const s2, Str const s3, Str const s4, Str const s5, Str const s6) {
+    return strConcat(mem_heap, (Strs) {.len = 6, .at = ((Str[]) {s1, s2, s3, s4, s5, s6})}, 0);
 }
 
-Str str7(Str const s1, Str const s2, Str const s3, Str const s4, Str const s5, Str const s6, Str const s7) {
-    return strConcat((Strs) {.len = 7, .at = ((Str[]) {s1, s2, s3, s4, s5, s6, s7})}, 0);
+Str str7(MemHeap* mem_heap, Str const s1, Str const s2, Str const s3, Str const s4, Str const s5, Str const s6, Str const s7) {
+    return strConcat(mem_heap, (Strs) {.len = 7, .at = ((Str[]) {s1, s2, s3, s4, s5, s6, s7})}, 0);
 }
 
-Str str8(Str const s1, Str const s2, Str const s3, Str const s4, Str const s5, Str const s6, Str const s7, Str const s8) {
-    return strConcat((Strs) {.len = 8, .at = ((Str[]) {s1, s2, s3, s4, s5, s6, s7, s8})}, 0);
+Str str8(MemHeap* mem_heap, Str const s1, Str const s2, Str const s3, Str const s4, Str const s5, Str const s6, Str const s7, Str const s8) {
+    return strConcat(mem_heap, (Strs) {.len = 8, .at = ((Str[]) {s1, s2, s3, s4, s5, s6, s7, s8})}, 0);
 }
 
 
@@ -313,8 +319,8 @@ void printChr(U8 const chr) {
     fwrite(&chr, 1, 1, stderr);
 }
 
-Str ident(Str const str) {
-    Str ret_ident = newStr(0, 4 * str.len);
+Str ident(MemHeap* mem_heap, Str const str) {
+    Str ret_ident = newStr(mem_heap, 0, 4 * str.len);
     Bool all_chars_ok = true;
     for (UInt i = 0; i < str.len; i += 1) {
         U8 c = str.at[i];
@@ -322,7 +328,7 @@ Str ident(Str const str) {
             ·push(ret_ident, c);
         else {
             all_chars_ok = false;
-            Str const hex = uIntToStr(c, 1, 16);
+            Str const hex = uIntToStr(mem_heap, c, 1, 16);
             ·push(ret_ident, '-');
             for (UInt j = 0; j < hex.len; j += 1)
                 ·push(ret_ident, hex.at[j]);
