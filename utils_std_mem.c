@@ -29,6 +29,8 @@ typedef struct MemHeap {
 } MemHeap;
 
 UInt memSize(MemHeap* mem_heap) {
+    if (mem_heap == NULL)
+        return mem_bss_max;
     switch (mem_heap->kind) {
         case mem_heap_fixed_size: return mem_heap->cap;
         case mem_heap_pages_malloc: {
@@ -46,24 +48,23 @@ UInt memSize(MemHeap* mem_heap) {
 }
 
 void memFree(MemHeap* mem_heap) {
-    if (mem_heap == NULL) {
-        MemHeap bss = (MemHeap) {.ptr = &mem_bss, .cap = mem_bss_max, .len = mem_bss.pos, .kind = mem_heap_fixed_size};
-        mem_heap = &bss;
-    }
-    switch (mem_heap->kind) {
-        case mem_heap_fixed_size: {
-            mem_heap->len = 0;
-        } break;
-        case mem_heap_pages_malloc: {
-            PtrAny ptr = mem_heap->ptr;
-            while (ptr != NULL) {
-                PtrAny ptr_next = *((PtrAny*)ptr);
-                free(ptr);
-                ptr = ptr_next;
-            }
-        } break;
-        default: exit(mem_heap->kind);
-    }
+    if (mem_heap == NULL)
+        mem_bss.pos = 0;
+    else
+        switch (mem_heap->kind) {
+            case mem_heap_fixed_size: {
+                mem_heap->len = 0;
+            } break;
+            case mem_heap_pages_malloc: {
+                PtrAny ptr = mem_heap->ptr;
+                while (ptr != NULL) {
+                    PtrAny ptr_next = *((PtrAny*)ptr);
+                    free(ptr);
+                    ptr = ptr_next;
+                }
+            } break;
+            default: exit(mem_heap->kind);
+        }
 }
 
 PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
@@ -90,22 +91,24 @@ PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
                     ·fail(str("memAlloc: heap allocator out of memory"));
                 *((PtrAny*)next_page) = mem_heap->ptr;
                 mem_heap->ptr = next_page;
-                mem_heap->len = sizeof(PtrAny);
-                idx = mem_heap->len;
-                new_len = mem_heap->len + size;
+                idx = sizeof(PtrAny);
+                new_len = idx + size;
             } break;
             default: exit(mem_heap->kind);
         }
     mem_heap->len = new_len;
     if (is_bss)
-        mem_bss.pos = mem_heap->len;
+        mem_bss.pos = new_len;
     return ((U8*)mem_heap->ptr) + idx;
+}
+
+U8* memBssAlloc(UInt const num_bytes) {
+    return memAlloc(NULL, num_bytes);
 }
 
 
 
 // macro names prefixed with '·' instead of all upper-case (avoids SCREAM_CODE)
-
 
 #define ·new(T) ((T*)memBssAlloc(sizeof(T)))
 
@@ -132,9 +135,6 @@ PtrAny memAlloc(MemHeap* mem_heap, UInt const size) {
 
 
 
-U8* memBssAlloc(UInt const num_bytes) {
-    return memAlloc(NULL, num_bytes);
-}
 
 Str newStr(UInt const initial_len, UInt const max_capacity, Bool const zeroed) {
     Str ret_str = (Str) {.len = initial_len, .at = memBssAlloc(max_capacity)};
