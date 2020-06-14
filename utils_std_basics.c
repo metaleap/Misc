@@ -155,16 +155,16 @@ void abortWithBacktraceAndMsg(Str const msg) {
     abort();
 }
 
-Str strL(CStr const c_str, UInt str_len) {
+Str strL(PtrAny const c_str, UInt str_len) {
     if (c_str == NULL)
         return ·len0(U8);
     if (str_len == 0)
-        for (UInt i = 0; c_str[i] != 0; i += 1)
+        for (UInt i = 0; ((U8*)c_str)[i] != 0; i += 1)
             str_len += 1;
-    return (Str) {.len = str_len, .at = (U8*)c_str};
+    return (Str) {.len = str_len, .at = c_str};
 }
 
-Str str(CStr const c_str) {
+Str str(PtrAny const c_str) {
     return strL(c_str, 0);
 }
 
@@ -203,7 +203,7 @@ Bool strEql(Str const one, Str const two) {
     return true;
 }
 
-Bool strEq(CStr const one, Str const two, UInt const str_len) {
+Bool strEq(PtrAny const one, Str const two, UInt const str_len) {
     return strEql(strL(one, str_len), two);
 }
 

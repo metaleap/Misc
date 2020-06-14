@@ -28,17 +28,17 @@ typedef struct MemHeap {
     MemHeapKind kind;
 } MemHeap;
 
-UInt memHeapSize(MemHeap* mem_heap) {
+UInt memHeapSize(MemHeap* mem_heap, Bool const cap) {
     if (mem_heap == NULL)
         return mem_bss_max;
     switch (mem_heap->kind) {
-        case mem_heap_fixed_size: return mem_heap->cap;
+        case mem_heap_fixed_size: return cap ? mem_heap->cap : mem_heap->len;
         case mem_heap_pages_malloc: {
             UInt ret_size = 0;
             PtrAny ptr = mem_heap->ptr;
             while (ptr != NULL) {
                 PtrAny ptr_next = *((PtrAny*)ptr);
-                ret_size += mem_heap->cap;
+                ret_size += (cap ? mem_heap->cap : mem_heap->len);
                 ptr = ptr_next;
             }
             return ret_size;
@@ -80,7 +80,7 @@ PtrAny memHeapAlloc(MemHeap* mem_heap, UInt const size) {
     UInt idx = mem_heap->len;
     UInt new_len = mem_heap->len + size;
 
-    if (new_len >= mem_heap->cap)
+    if (mem_heap->ptr == NULL || new_len > mem_heap->cap)
         switch (mem_heap->kind) {
             case mem_heap_fixed_size: {
                 ·fail(str((!is_bss) ? "memAlloc: fixed-size allocator out of memory" : "TODO: increase mem_bss_max"));
