@@ -22,7 +22,7 @@ typedef enum MemHeapKind {
 } MemHeapKind;
 
 typedef struct MemHeap {
-    PtrAny ptr;
+    U8* ptr;
     UInt cap;
     UInt len;
     MemHeapKind kind;
@@ -50,21 +50,22 @@ UInt memHeapSize(MemHeap* mem_heap) {
 void memHeapFree(MemHeap* mem_heap) {
     if (mem_heap == NULL)
         mem_bss.pos = 0;
-    else
+    else {
         switch (mem_heap->kind) {
-            case mem_heap_fixed_size: {
-                mem_heap->len = 0;
-            } break;
+            case mem_heap_fixed_size: break;
             case mem_heap_pages_malloc: {
                 PtrAny ptr = mem_heap->ptr;
                 while (ptr != NULL) {
-                    PtrAny ptr_next = *((PtrAny*)ptr);
+                    PtrAny const ptr_next = *((PtrAny*)ptr);
                     free(ptr);
                     ptr = ptr_next;
                 }
+                mem_heap->ptr = NULL;
             } break;
             default: exit(mem_heap->kind);
         }
+        mem_heap->len = 0;
+    }
 }
 
 PtrAny memHeapAlloc(MemHeap* mem_heap, UInt const size) {
@@ -73,11 +74,12 @@ PtrAny memHeapAlloc(MemHeap* mem_heap, UInt const size) {
     MemHeap bss;
     Bool is_bss = (mem_heap == NULL);
     if (is_bss) {
-        bss = (MemHeap) {.ptr = &mem_bss, .cap = mem_bss_max, .len = mem_bss.pos, .kind = mem_heap_fixed_size};
+        bss = (MemHeap) {.ptr = &mem_bss.buf[0], .cap = mem_bss_max, .len = mem_bss.pos, .kind = mem_heap_fixed_size};
         mem_heap = &bss;
     }
     UInt idx = mem_heap->len;
     UInt new_len = mem_heap->len + size;
+
     if (new_len >= mem_heap->cap)
         switch (mem_heap->kind) {
             case mem_heap_fixed_size: {
@@ -96,17 +98,37 @@ PtrAny memHeapAlloc(MemHeap* mem_heap, UInt const size) {
             } break;
             default: exit(mem_heap->kind);
         }
+
     mem_heap->len = new_len;
     if (is_bss)
         mem_bss.pos = new_len;
-    return ((U8*)mem_heap->ptr) + idx;
+    return mem_heap->ptr + idx;
 }
 
-PtrAny memHeapCopy(MemHeap* mem_heap, PtrAny ptr, UInt size) {
-    PtrAny ret_ptr = memHeapAlloc(mem_heap, size);
-    for (UInt i = 0; i < size; i += 1)
-        ((U8*)ret_ptr)[i] = ((U8*)ptr)[i];
+PtrAny memHeapPut(MemHeap* dst, PtrAny src, UInt num_bytes) {
+    PtrAny ret_ptr = memHeapAlloc(dst, num_bytes);
+    for (UInt i = 0; i < num_bytes; i += 1)
+        ((U8*)ret_ptr)[i] = ((U8*)src)[i];
     return ret_ptr;
+}
+
+UInt memHeapCopyTo(MemHeap* src, U8* dst) {
+    UInt ret_len = 0;
+    if (src->ptr != NULL) {
+        Bool const is_pages_malloc = (src->kind == mem_heap_pages_malloc);
+        if (is_pages_malloc) {
+            PtrAny ptr_next = *((PtrAny*)src->ptr);
+            if (ptr_next != NULL) {
+                MemHeap next = (MemHeap) {.cap = src->cap, .len = src->cap, .kind = mem_heap_pages_malloc, .ptr = ptr_next};
+                ret_len += memHeapCopyTo(&next, dst);
+            }
+        }
+        UInt const offset = is_pages_malloc ? sizeof(PtrAny) : 0;
+        for (UInt i = 0; i < src->len - offset; i += 1)
+            dst[ret_len + i] = src->ptr[i + offset];
+        ret_len += src->len - offset;
+    }
+    return ret_len;
 }
 
 
@@ -115,7 +137,7 @@ PtrAny memHeapCopy(MemHeap* mem_heap, PtrAny ptr, UInt size) {
 
 #define ·new(T, ¹mem_heap__) ((T*)memHeapAlloc((¹mem_heap__), sizeof(T)))
 
-#define ·keep(T, ¹mem_heap__, ¹the_value__) ((T*)memHeapCopy(¹mem_heap__, ¹the_value__, sizeof(T)))
+#define ·keep(T, ¹mem_heap__, ¹the_value__) ((T*)memHeapPut(¹mem_heap__, ¹the_value__, sizeof(T)))
 
 #define ·sliceOf(T, ¹mem_heap__, ³initial_len__, ²max_capacity__)                                                                            \
     ((T##s) {.len = (³initial_len__),                                                                                                        \
