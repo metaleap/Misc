@@ -28,6 +28,8 @@ typedef struct MemHeap {
     MemHeapKind kind;
 } MemHeap;
 
+Str uIntToStr(MemHeap*, UInt const, UInt const, UInt const);
+
 UInt memHeapSize(MemHeap* mem_heap, Bool const cap) {
     if (mem_heap == NULL)
         return mem_bss_max;
@@ -43,36 +45,36 @@ UInt memHeapSize(MemHeap* mem_heap, Bool const cap) {
             }
             return ret_size;
         }
-        default: exit(mem_heap->kind);
+        default: ·fail(uIntToStr(NULL, mem_heap->kind, 1, 10));
     }
 }
 
 void memHeapFree(MemHeap* mem_heap) {
-    if (mem_heap == NULL)
+    if (mem_heap == NULL) {
         mem_bss.pos = 0;
-    else {
-        switch (mem_heap->kind) {
-            case mem_heap_fixed_size: break;
-            case mem_heap_pages_malloc: {
-                PtrAny ptr = mem_heap->ptr;
-                while (ptr != NULL) {
-                    PtrAny const ptr_next = *((PtrAny*)ptr);
-                    free(ptr);
-                    ptr = ptr_next;
-                }
-                mem_heap->ptr = NULL;
-            } break;
-            default: exit(mem_heap->kind);
-        }
-        mem_heap->len = 0;
+        return;
     }
+    switch (mem_heap->kind) {
+        case mem_heap_fixed_size: break;
+        case mem_heap_pages_malloc: {
+            PtrAny ptr = mem_heap->ptr;
+            while (ptr != NULL) {
+                PtrAny const ptr_next = *((PtrAny*)ptr);
+                free(ptr);
+                ptr = ptr_next;
+            }
+            mem_heap->ptr = NULL;
+        } break;
+        default: ·fail(uIntToStr(NULL, mem_heap->kind, 1, 10));
+    }
+    mem_heap->len = 0;
 }
 
 PtrAny memHeapAlloc(MemHeap* mem_heap, UInt const size) {
     if (size == 0)
         return NULL;
     MemHeap bss;
-    Bool is_bss = (mem_heap == NULL);
+    Bool const is_bss = (mem_heap == NULL);
     if (is_bss) {
         bss = (MemHeap) {.ptr = &mem_bss.buf[0], .cap = mem_bss_max, .len = mem_bss.pos, .kind = mem_heap_fixed_size};
         mem_heap = &bss;
@@ -96,7 +98,7 @@ PtrAny memHeapAlloc(MemHeap* mem_heap, UInt const size) {
                 idx = sizeof(PtrAny);
                 new_len = idx + size;
             } break;
-            default: exit(mem_heap->kind);
+            default: ·fail(uIntToStr(NULL, mem_heap->kind, 1, 10));
         }
 
     mem_heap->len = new_len;
@@ -112,7 +114,7 @@ PtrAny memHeapPut(MemHeap* dst, PtrAny src, UInt num_bytes) {
     return ret_ptr;
 }
 
-UInt memHeapCopyTo(MemHeap* src, U8* dst) {
+UInt memHeapCopy(MemHeap* src, U8* dst) {
     UInt ret_len = 0;
     if (src->ptr != NULL) {
         Bool const is_pages_malloc = (src->kind == mem_heap_pages_malloc);
@@ -120,7 +122,7 @@ UInt memHeapCopyTo(MemHeap* src, U8* dst) {
             PtrAny ptr_next = *((PtrAny*)src->ptr);
             if (ptr_next != NULL) {
                 MemHeap next = (MemHeap) {.cap = src->cap, .len = src->cap, .kind = mem_heap_pages_malloc, .ptr = ptr_next};
-                ret_len += memHeapCopyTo(&next, dst);
+                ret_len += memHeapCopy(&next, dst);
             }
         }
         UInt const offset = is_pages_malloc ? sizeof(PtrAny) : 0;
