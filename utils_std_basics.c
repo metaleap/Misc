@@ -256,6 +256,15 @@ Bool strSuff(Str const haystack, Str const suffix) {
     return ·none(UInt);
 }
 
+Str strPush(Str buf, CStr const str_z) {
+    UInt len;
+    for (len = 0; str_z != NULL && str_z[len] != 0; len += 1)
+        buf.at[buf.len + len] = str_z[len];
+    buf.len += len;
+    buf.at[buf.len] = 0;
+    return buf;
+}
+
 Str strCopyTo(Str buf, Str const str) {
     for (UInt i = 0; i < str.len; i += 1)
         buf.at[i + buf.len] = str.at[i];
