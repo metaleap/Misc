@@ -170,7 +170,7 @@ UInt memHeapCopy(MemHeap* src, U8* dst) {
 
 
 Str newStr(MemHeap* mem_heap, UInt const initial_len, UInt const max_capacity) {
-    Str ret_str = (Str) {.len = initial_len, .at = memHeapAlloc(mem_heap, 1 + max_capacity)};
+    Str ret_str = (Str) {.len = initial_len, .at = memHeapAlloc(mem_heap, 1 + ((max_capacity > initial_len) ? max_capacity : initial_len))};
     ret_str.at[max_capacity] = 0;
     ret_str.at[initial_len] = 0;
     return ret_str;
