@@ -12,36 +12,36 @@
 // #pragma clang diagnostic ignored "-Wlanguage-extension-token"
 // #define ·dbgBrk() asm volatile("int3"); // gdb myprog -ex run
 
-#define ·SliceOf(T)                                                                                                                          \
-    struct {                                                                                                                                 \
-        T* at;                                                                                                                               \
-        UInt len;                                                                                                                            \
+#define ·SliceOf(T)                                                                    \
+    struct {                                                                           \
+        T* at;                                                                         \
+        UInt len;                                                                      \
     }
 
-#define ·SliceOfPtrs(T)                                                                                                                      \
-    struct {                                                                                                                                 \
-        T** at;                                                                                                                              \
-        UInt len;                                                                                                                            \
+#define ·SliceOfPtrs(T)                                                                \
+    struct {                                                                           \
+        T** at;                                                                        \
+        UInt len;                                                                      \
     }
 
-#define ·ListOf(T)                                                                                                                           \
-    struct {                                                                                                                                 \
-        T* at;                                                                                                                               \
-        UInt len;                                                                                                                            \
-        UInt cap;                                                                                                                            \
+#define ·ListOf(T)                                                                     \
+    struct {                                                                           \
+        T* at;                                                                         \
+        UInt len;                                                                      \
+        UInt cap;                                                                      \
     }
 
-#define ·ListOfPtrs(T)                                                                                                                       \
-    struct {                                                                                                                                 \
-        T** at;                                                                                                                              \
-        UInt len;                                                                                                                            \
-        UInt cap;                                                                                                                            \
+#define ·ListOfPtrs(T)                                                                 \
+    struct {                                                                           \
+        T** at;                                                                        \
+        UInt len;                                                                      \
+        UInt cap;                                                                      \
     }
 
-#define ·Maybe(T)                                                                                                                            \
-    struct {                                                                                                                                 \
-        T it;                                                                                                                                \
-        Bool got;                                                                                                                            \
+#define ·Maybe(T)                                                                      \
+    struct {                                                                           \
+        T it;                                                                          \
+        Bool got;                                                                      \
     }
 
 typedef bool Bool;
@@ -55,7 +55,7 @@ typedef int32_t I32;
 typedef int64_t I64;
 typedef ssize_t Int;
 typedef size_t UInt;
-typedef void* PtrAny;
+typedef void* Any;
 typedef char* CStr;
 
 typedef ·Maybe(Bool) ºBool;
@@ -72,33 +72,39 @@ typedef ·SliceOf(Str) Strs;
 
 #define ·len0(T) ((T##s) {.len = 0, .at = NULL})
 
-#define ·len1(T, ptr_to_the_value_at_0__) ((T##s) {.len = 1, .at = ptr_to_the_value_at_0__})
+#define ·len1(T, ptr_to_the_value_at_0__)                                              \
+    ((T##s) {.len = 1, .at = ptr_to_the_value_at_0__})
 
-#define ·slice(TSlice__, ¹the_slice_to_reslice__, ²idx_start_reslice_from__, ¹idx_end_to_reslice_until__)                                    \
-    ((TSlice__##s) {.len = (¹idx_end_to_reslice_until__) - (²idx_start_reslice_from__),                                                      \
+#define ·slice(TSlice__, ¹the_slice_to_reslice__, ²idx_start_reslice_from__,           \
+               ¹idx_end_to_reslice_until__)                                            \
+    ((TSlice__##s) {.len =                                                             \
+                        (¹idx_end_to_reslice_until__) - (²idx_start_reslice_from__),   \
                     .at = &((¹the_slice_to_reslice__).at[²idx_start_reslice_from__])})
 
 #define ·last(²the_slice__) (&(²the_slice__.at[²the_slice__.len - 1]))
 
-#define ·push(³the_slice_to_append_to__, ¹the_item_to_append__)                                                                              \
-    do {                                                                                                                                     \
-        (³the_slice_to_append_to__).at[(³the_slice_to_append_to__).len] = (¹the_item_to_append__);                                           \
-        (³the_slice_to_append_to__).len += 1;                                                                                                \
+#define ·push(³the_slice_to_append_to__, ¹the_item_to_append__)                        \
+    do {                                                                               \
+        (³the_slice_to_append_to__).at[(³the_slice_to_append_to__).len] =              \
+            (¹the_item_to_append__);                                                   \
+        (³the_slice_to_append_to__).len += 1;                                          \
     } while (0)
 
-#define ·append(⁵the_list_to_append_to__, ¹the_item_to_append__)                                                                             \
-    do {                                                                                                                                     \
-        ·assert((⁵the_list_to_append_to__).len < (⁵the_list_to_append_to__).cap);                                                            \
-        (⁵the_list_to_append_to__).at[(⁵the_list_to_append_to__).len] = (¹the_item_to_append__);                                             \
-        (⁵the_list_to_append_to__).len += 1;                                                                                                 \
+#define ·append(⁵the_list_to_append_to__, ¹the_item_to_append__)                       \
+    do {                                                                               \
+        ·assert((⁵the_list_to_append_to__).len < (⁵the_list_to_append_to__).cap);      \
+        (⁵the_list_to_append_to__).at[(⁵the_list_to_append_to__).len] =                \
+            (¹the_item_to_append__);                                                   \
+        (⁵the_list_to_append_to__).len += 1;                                           \
     } while (0)
 
-#define ·forEach(TItem, the_ident__, ²the_slice_to_iter__, ¹do_block__)                                                                      \
-    do {                                                                                                                                     \
-        for (UInt iˇ##the_ident__ = 0; iˇ##the_ident__ < (²the_slice_to_iter__).len; iˇ##the_ident__ += 1) {                                 \
-            TItem* const the_ident__ = &((²the_slice_to_iter__).at[iˇ##the_ident__]);                                                        \
-            { ¹do_block__ }                                                                                                                  \
-        }                                                                                                                                    \
+#define ·forEach(TItem, the_ident__, ²the_slice_to_iter__, ¹do_block__)                \
+    do {                                                                               \
+        for (UInt iˇ##the_ident__ = 0; iˇ##the_ident__ < (²the_slice_to_iter__).len;   \
+             iˇ##the_ident__ += 1) {                                                   \
+            TItem* const the_ident__ = &((²the_slice_to_iter__).at[iˇ##the_ident__]);  \
+            { ¹do_block__ }                                                            \
+        }                                                                              \
     } while (0)
 
 #define ·got(T, ¹the_value__) ((º##T) {.got = true, .it = (¹the_value__)})
@@ -107,17 +113,30 @@ typedef ·SliceOf(Str) Strs;
 
 #define ·as(T, ¹the_expr__) ((T*)(¹the_expr__))
 
-#define ·swap(T, the_ptr_lhs, the_ptr_rhs)                                                                                                   \
-    do {                                                                                                                                     \
-        T* tmp_rhs = the_ptr_rhs;                                                                                                            \
-        the_ptr_rhs = the_ptr_lhs;                                                                                                           \
-        the_ptr_lhs = tmp_rhs;                                                                                                               \
+#define ·fYay(¹the_enum__, ¹the_flag__) (¹the_enum__) | (¹the_flag__)
+
+#define ·fNay(¹the_enum__, ¹the_flag__) (¹the_enum__) & (~(¹the_flag__))
+
+#define ·fHas(¹the_enum__, ²the_flag__)                                                \
+    (((¹the_enum__) & (²the_flag__)) == (²the_flag__))
+
+#define ·flag(²the_enum__, ²the_flag__, ¹the_bool__)                                   \
+    ((¹the_bool__) ? ((²the_enum__) | (²the_flag__))                                   \
+                   : ((²the_enum__) & (~(²the_flag__))))
+
+#define ·swap(T, the_ptr_lhs, the_ptr_rhs)                                             \
+    do {                                                                               \
+        T* tmp_rhs = the_ptr_rhs;                                                      \
+        the_ptr_rhs = the_ptr_lhs;                                                     \
+        the_ptr_lhs = tmp_rhs;                                                         \
     } while (0)
 
-#define ·fail(¹the_msg)                                                                                                                      \
-    do {                                                                                                                                     \
-        fprintf(stderr, "\n——————————————————————————————————————————\npanicked at: %s:%d\n", __FILE__, __LINE__);                           \
-        abortWithBacktraceAndMsg(¹the_msg);                                                                                                  \
+#define ·fail(¹the_msg)                                                                \
+    do {                                                                               \
+        fprintf(stderr,                                                                \
+                "\n——————————————————————————————————————————\npanicked at: %s:%d\n",  \
+                __FILE__, __LINE__);                                                   \
+        abortWithBacktraceAndMsg(¹the_msg);                                            \
     } while (0)
 
 #ifdef NDEBUG
@@ -136,6 +155,7 @@ typedef ·SliceOf(Str) Strs;
 #endif
 
 
+
 void printStr(Str const str) {
     fwrite(&str.at[0], 1, str.len, stderr);
 }
@@ -144,7 +164,7 @@ void writeStr(Str const str) {
 }
 
 void abortWithBacktraceAndMsg(Str const msg) {
-    PtrAny callstack[16];
+    Any callstack[16];
     UInt const n_frames = backtrace(callstack, 16);
     backtrace_symbols_fd(callstack, n_frames, 2); // 2 = stderr
 
@@ -155,7 +175,7 @@ void abortWithBacktraceAndMsg(Str const msg) {
     abort();
 }
 
-Str strL(PtrAny const c_str, UInt str_len) {
+Str strL(Any const c_str, UInt str_len) {
     if (c_str == NULL)
         return ·len0(U8);
     if (str_len == 0)
@@ -164,7 +184,7 @@ Str strL(PtrAny const c_str, UInt str_len) {
     return (Str) {.len = str_len, .at = c_str};
 }
 
-Str str(PtrAny const c_str) {
+Str str(Any const c_str) {
     return strL(c_str, 0);
 }
 
@@ -203,7 +223,7 @@ Bool strEql(Str const one, Str const two) {
     return true;
 }
 
-Bool strEq(PtrAny const one, Str const two, UInt const str_len) {
+Bool strEq(Any const one, Str const two, UInt const str_len) {
     return strEql(strL(one, str_len), two);
 }
 
@@ -235,19 +255,23 @@ Bool cStrHasChar(CStr const s, U8 const c) {
 
 Bool strPref(Str const haystack, Str const prefix) {
     if (haystack.len >= prefix.len && prefix.len > 0)
-        return (prefix.len == 1) ? (haystack.at[0] == prefix.at[0]) : strEql(prefix, strSub(haystack, 0, prefix.len));
+        return (prefix.len == 1) ? (haystack.at[0] == prefix.at[0])
+                                 : strEql(prefix, strSub(haystack, 0, prefix.len));
     return false;
 }
 
 Bool strSuff(Str const haystack, Str const suffix) {
     if (haystack.len >= suffix.len && suffix.len > 0)
-        return (suffix.len == 1) ? (haystack.at[haystack.len - 1] == suffix.at[0])
-                                 : strEql(suffix, strSub(haystack, haystack.len - suffix.len, haystack.len));
+        return (suffix.len == 1)
+                   ? (haystack.at[haystack.len - 1] == suffix.at[0])
+                   : strEql(suffix,
+                            strSub(haystack, haystack.len - suffix.len, haystack.len));
     return false;
 }
 
 ºUInt strIndexOf(Str const haystack, Str const needle) {
-    if (haystack.at != NULL && haystack.len != 0 && needle.len != 0 && haystack.len >= needle.len)
+    if (haystack.at != NULL && haystack.len != 0 && needle.len != 0
+        && haystack.len >= needle.len)
         for (UInt i = 0; i < 1 + (haystack.len - needle.len); i += 1) {
             Str const h_sub = ·slice(U8, haystack, i, i + needle.len);
             if (strEql(needle, h_sub))
