@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 
-// macro names prefixed with '·' instead of all upper-case (avoids SCREAM_CODE)
+// macro names prefixed with '·' instead of all upper-case
 
 
 // #pragma clang diagnostic ignored "-Wlanguage-extension-token"
