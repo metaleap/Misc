@@ -28,6 +28,7 @@ typedef struct MemHeap {
     MemHeapKind kind;
 } MemHeap;
 
+// itoa for uints
 Str uIntToStr(MemHeap*, UInt const, UInt const, UInt const);
 
 UInt memHeapSize(MemHeap* mem_heap, Bool const cap) {
